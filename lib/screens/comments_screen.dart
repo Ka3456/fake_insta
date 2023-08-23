@@ -1,25 +1,66 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/user.dart';
+import 'package:flutter_application_1/resources/firestore_methods.dart';
 import 'package:flutter_application_1/widgets/comment_card.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/user_provider.dart';
 import '../utils/colors.dart';
 
-class CommentsScreenState extends StatefulWidget {
-  const CommentsScreenState({super.key});
+class CommentsScreen extends StatefulWidget {
+  final snap;
+  const CommentsScreen({super.key, required this.snap});
 
   @override
-  State<CommentsScreenState> createState() => _CommentsScreenStateState();
+  State<CommentsScreen> createState() => _CommentsScreenState();
 }
 
-class _CommentsScreenStateState extends State<CommentsScreenState> {
+class _CommentsScreenState extends State<CommentsScreen> {
+  //なんか後からの追加
+  final TextEditingController _commentEditingController =
+      TextEditingController();
+
+  @override
+  void dispose() {
+    super.dispose();
+    _commentEditingController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    //userの情報を取得
+    final User user = Provider.of<UserProvider>(context).getUser;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: mobileBackgroundColor,
         title: const Text('Comments Screen'),
         centerTitle: false,
       ),
-      body: CommentCard(),
+      body: StreamBuilder(
+
+          //このcollectionでデータを取得する時のファイル名を指定してる
+          stream: FirebaseFirestore.instance
+              .collection('posts')
+              .doc(widget.snap['postId'])
+              .collection('comments')
+              .orderBy('datePublished', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            return ListView.builder(
+              //コメントの数を確認
+              itemCount: (snapshot.data! as dynamic).docs.length,
+              itemBuilder: (context, index) => CommentCard(
+                  snap: (snapshot.data! as dynamic).docs[index].data()),
+            );
+          }),
       bottomNavigationBar: SafeArea(
         child: Container(
           height: kToolbarHeight,
@@ -30,7 +71,7 @@ class _CommentsScreenStateState extends State<CommentsScreenState> {
             children: [
               CircleAvatar(
                 backgroundImage: NetworkImage(
-                  'https://images.unsplash.com/photo-1691874683123-5d7bf8d79df1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw3MXx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=60',
+                  user.photoUrl,
                 ),
                 radius: 18,
               ),
@@ -38,15 +79,28 @@ class _CommentsScreenStateState extends State<CommentsScreenState> {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 16.0, right: 8),
                   child: TextField(
+                    controller: _commentEditingController,
                     decoration: InputDecoration(
-                      hintText: 'メッセージを追加',
+                      hintText: '${user.username}としてコメントする',
                       border: InputBorder.none,
                     ),
                   ),
                 ),
               ),
               InkWell(
-                onTap: () {},
+                onTap: () async {
+                  await FirestoreMethods().postComment(
+                    widget.snap['postId'],
+                    _commentEditingController.text,
+                    user.uid,
+                    user.username,
+                    user.photoUrl,
+                  );
+
+                  setState(() {
+                    _commentEditingController.text = '';
+                  });
+                },
                 child: Container(
                     padding:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 8),

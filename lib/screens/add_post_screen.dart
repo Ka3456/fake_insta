@@ -65,7 +65,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         return SimpleDialog(title: const Text('Create Post'), children: [
           SimpleDialogOption(
             padding: EdgeInsets.all(20),
-            child: const Text('Take a Photo'),
+            child: const Text('写真をとる'),
             onPressed: () async {
               Navigator.of(context).pop();
               Uint8List file = await pickImage(ImageSource.camera);
@@ -77,7 +77,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           ),
           SimpleDialogOption(
             padding: EdgeInsets.all(20),
-            child: const Text('Choose from Gallery'),
+            child: const Text('写真を選択'),
             onPressed: () async {
               Navigator.of(context).pop();
               Uint8List file = await pickImage(ImageSource.gallery);

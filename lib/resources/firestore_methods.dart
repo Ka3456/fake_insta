@@ -57,4 +57,51 @@ class FirestoreMethods {
       print(e.toString());
     }
   }
+
+  Future<void> postComment(
+    String postId,
+    String text,
+    String uid,
+    String name,
+    String profilePic,
+  ) async {
+    String res = 'some error occured';
+    try {
+      if (text.isNotEmpty) {
+        String commentId = const Uuid().v1();
+        //ここの下にデータの格納場所を示してる
+        //postsの中にpostIdの中にcommentsの中にcommentIdの中にtextとかを格納してる
+
+        await _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('comments')
+            .doc(commentId)
+            .set({
+          'text': text,
+          'uid': uid,
+          'name': name,
+          'profilePic': profilePic,
+          'commentId': commentId,
+          'datePublished': DateTime.now(),
+        });
+      } else {
+        print('コメントを入力してください');
+      }
+    } catch (e) {
+      print(
+        e.toString(),
+      );
+    }
+  }
+
+  //削除　投稿
+
+  Future<void> deletePost(String postId) async {
+    try {
+      await _firestore.collection('posts').doc(postId).delete();
+    } catch (err) {
+      print(err.toString());
+    }
+  }
 }
